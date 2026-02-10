@@ -1,132 +1,87 @@
 import 'package:flutter/material.dart';
-import 'http_helper.dart';
+
+import 'helpers/http_helper.dart';
+import 'models/movie.dart';
 import 'movie_detail.dart';
-import 'movie.dart';
 
 class MovieList extends StatefulWidget {
+  const MovieList({super.key});
+
   @override
   State<MovieList> createState() => _MovieListState();
 }
 
 class _MovieListState extends State<MovieList> {
-
-  late HttpHelper helper;
-
-  List<Movie> movies = [];
-
-  final String iconBase = 'https://image.tmdb.org/t/p/w92/';
-  final String defaultImage =
-      'https://images.freeimages.com/images/large-previews/5eb/movie-clapboard-1184339.jpg';
-
-  Icon visibleIcon = const Icon(Icons.search);
-  Widget searchBar = const Text('Movies');
+  final HttpHelper helper = HttpHelper();
+  late Future<List<Movie>> movies;
 
   @override
   void initState() {
     super.initState();
-    helper = HttpHelper();
-    initialize();
+    movies = helper.getUpcomingMovies() as Future<List<Movie>>;
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
+      appBar: AppBar(title: const Text('Upcoming Movies')),
+      body: FutureBuilder<List<Movie>>(
+        future: movies,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            final movies = snapshot.data!;
 
-      appBar: AppBar(
-        title: searchBar,
-        actions: [
+            return ListView.builder(
+              itemCount: movies.length,
+              itemBuilder: (context, index) {
+                final movie = movies[index];
 
-          IconButton(
-            icon: visibleIcon,
-
-            onPressed: () {
-
-              setState(() {
-
-                if (visibleIcon.icon == Icons.search) {
-
-                  visibleIcon = const Icon(Icons.cancel);
-
-                  searchBar = TextField(
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: search,
-                    style: const TextStyle(color: Colors.white,fontSize: 20),
-                  );
-
-                } else {
-
-                  visibleIcon = const Icon(Icons.search);
-                  searchBar = const Text('Movies');
-
-                }
-              });
-            },
-          ),
-        ],
-      ),
-
-      body: ListView.builder(
-
-        itemCount: movies.length,
-
-        itemBuilder: (context, index) {
-
-          final movie = movies[index];
-
-          final image = NetworkImage(
-            movie.posterPath != null
-                ? iconBase + movie.posterPath!
-                : defaultImage,
-          );
-
-          return Card(
-
-            child: ListTile(
-
-              onTap: () {
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => MovieDetail(movie),
+                return Card(
+                  elevation: 2,
+                  margin:
+                      const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 6),
+                  child: ListTile(
+                    leading: movie.posterPath.isNotEmpty
+                        ? Image.network(
+                            'https://image.tmdb.org/t/p/w92${movie.posterPath}',
+                            width: 50,
+                            fit: BoxFit.cover,
+                          )
+                        : const Icon(Icons.movie),
+                    title: Text(movie.title),
+                    subtitle: Text(
+                      'Release: ${movie.releaseDate}  ⭐ ${movie.voteAverage}',
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              MovieDetail(movie: movie),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
+            );
+          }
 
-              leading: CircleAvatar(backgroundImage: image),
-
-              title: Text(movie.title),
-
-              subtitle: Text(
-                'Released: ${movie.releaseDate} - Vote: ${movie.voteAverage}',
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error:\n${snapshot.error}',
+                textAlign: TextAlign.center,
               ),
-            ),
+            );
+          }
+
+          return const Center(
+            child: CircularProgressIndicator(),
           );
         },
       ),
     );
-  }
-
-  Future<void> search(String text) async {
-
-    final result = await helper.findMovies(text);
-
-    if (!mounted) return;
-
-    setState(() {
-      movies = result;
-    });
-  }
-
-  Future<void> initialize() async {
-
-    final result = await helper.getUpcoming();
-
-    if (!mounted) return;
-
-    setState(() {
-      movies = result;
-    });
   }
 }

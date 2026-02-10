@@ -1,24 +1,22 @@
 import 'package:flutter/material.dart';
 import 'movie_list.dart';
 
-void main() => runApp(MyMovies());
+void main() {
+  runApp(const MyMovies());
+}
 
 class MyMovies extends StatelessWidget {
+  const MyMovies({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'My Movies',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.deepOrange,
       ),
-      home: Home(),
+      home: const MovieList(),
     );
-  }
-}
-
-class Home extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MovieList();
   }
 }
